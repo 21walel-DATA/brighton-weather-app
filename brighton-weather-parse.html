@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My Weather App - Stage 3</title>
+</head>
+<body>
+  <h1>Brighton Weather - Stage 3</h1>
+
+  <p>Town: <span id="town"></span></p>
+  <p>Weather code: <span id="weatherCode"></span></p>
+  <p>Temperature: <span id="temperature"></span></p>
+  <p>Time: <span id="time"></span></p>
+
+  <p id="message"></p>
+
+  <script>
+    // CONFIG holds all the settings for the app in one place.
+    // Open-Meteo needs no API key, so we do not need one here.
+    // If an API did need a key, this is where it would go,
+    // for example: apiKey: "your-key-here"
+    const CONFIG = {
+      town: "Brighton",
+      latitude: 50.8284,
+      longitude: -0.1395
+    };
+
+    // buildUrl joins strings together with + to make the Open-Meteo forecast URL.
+    // It asks for the current temperature, weather code and wind speed,
+    // using the Europe/London timezone (the / is written as %2F in a URL).
+    function buildUrl() {
+      const url = "https://api.open-meteo.com/v1/forecast" +
+        "?latitude=" + CONFIG.latitude +
+        "&longitude=" + CONFIG.longitude +
+        "&current=temperature_2m,weather_code,wind_speed_10m" +
+        "&timezone=Europe%2FLondon";
+      return url;
+    }
+
+    // showWeather takes the data from the API and puts each value in its own span.
+    // The values are shown exactly as the API sends them (unformatted).
+    function showWeather(data) {
+      document.getElementById("town").textContent = CONFIG.town;
+      document.getElementById("weatherCode").textContent = data.current.weather_code;
+      document.getElementById("temperature").textContent = data.current.temperature_2m;
+      document.getElementById("time").textContent = data.current.time;
+    }
+
+    // loadWeather asks the API for the weather and passes the data to showWeather.
+    // try runs the code; if anything goes wrong, catch shows an error message instead.
+    async function loadWeather() {
+      try {
+        // Step 1: send the request and wait for the response
+        const response = await fetch(buildUrl());
+
+        // Step 2: turn the response into a JavaScript object
+        const data = await response.json();
+
+        // Step 3: hand the data to showWeather to put on the page
+        showWeather(data);
+      } catch (error) {
+        document.getElementById("message").textContent = "Could not load the weather.";
+        console.log(error);
+      }
+    }
+
+    // Run loadWeather when the page loads
+    loadWeather();
+  </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My Weather App - Stage 4</title>
+</head>
+<body>
+  <h1>Brighton Weather - Stage 4</h1>
+
+  <p>Town: <span id="town"></span></p>
+  <p>Weather: <span id="weatherCode"></span></p>
+  <p>Temperature: <span id="temperature"></span></p>
+  <p>Time: <span id="time"></span></p>
+
+  <button id="refreshButton">Refresh data</button>
+
+  <p id="message"></p>
+
+  <script>
+    // CONFIG holds all the settings for the app in one place.
+    // Open-Meteo needs no API key, so we do not need one here.
+    // If an API did need a key, this is where it would go,
+    // for example: apiKey: "your-key-here"
+    const CONFIG = {
+      town: "Brighton",
+      latitude: 50.8284,
+      longitude: -0.1395
+    };
+
+    // buildUrl joins strings together with + to make the Open-Meteo forecast URL.
+    // It asks for the current temperature, weather code and wind speed,
+    // using the Europe/London timezone (the / is written as %2F in a URL).
+    function buildUrl() {
+      const url = "https://api.open-meteo.com/v1/forecast" +
+        "?latitude=" + CONFIG.latitude +
+        "&longitude=" + CONFIG.longitude +
+        "&current=temperature_2m,weather_code,wind_speed_10m" +
+        "&timezone=Europe%2FLondon";
+      return url;
+    }
+
+    // formatDate turns "2026-10-28T12:45" into "28/10/2026 12:45".
+    // split cuts a string into an array of pieces wherever it finds the given character.
+    function formatDate(isoTime) {
+      // "2026-10-28T12:45" -> ["2026-10-28", "12:45"]
+      const dateAndTime = isoTime.split("T");
+      const date = dateAndTime[0];
+      const time = dateAndTime[1];
+
+      // "2026-10-28" -> ["2026", "10", "28"]
+      const parts = date.split("-");
+      const year = parts[0];
+      const month = parts[1];
+      const day = parts[2];
+
+      return day + "/" + month + "/" + year + " " + time;
+    }
+
+    // describeWeather turns the weather code number into words.
+    function describeWeather(code) {
+      if (code === 0) {
+        return "Clear sky";
+      } else if (code >= 1 && code <= 3) {
+        return "Cloudy";
+      } else if (code >= 45 && code <= 48) {
+        return "Fog";
+      } else if (code >= 51 && code <= 67) {
+        return "Rain";
+      } else if (code >= 71 && code <= 77) {
+        return "Snow";
+      } else if (code >= 80 && code <= 82) {
+        return "Rain showers";
+      } else if (code >= 95) {
+        return "Thunderstorm";
+      } else {
+        return "Unknown";
+      }
+    }
+
+    // showWeather takes the data from the API and puts each value in its own span,
+    // using describeWeather and formatDate to make it easy to read.
+    function showWeather(data) {
+      document.getElementById("town").textContent = CONFIG.town;
+      document.getElementById("weatherCode").textContent = describeWeather(data.current.weather_code);
+      document.getElementById("temperature").textContent = data.current.temperature_2m + "°C";
+      document.getElementById("time").textContent = formatDate(data.current.time);
+    }
+
+    // loadWeather asks the API for the weather and passes the data to showWeather.
+    // try runs the code; if anything goes wrong, catch shows an error message instead.
+    async function loadWeather() {
+      try {
+        // Step 1: send the request and wait for the response
+        const response = await fetch(buildUrl());
+
+        // Step 2: turn the response into a JavaScript object
+        const data = await response.json();
+
+        // Step 3: hand the data to showWeather and clear any old error message
+        showWeather(data);
+        document.getElementById("message").textContent = "";
+      } catch (error) {
+        document.getElementById("message").textContent = "Could not load the weather.";
+        console.log(error);
+      }
+    }
+
+    // When the button is clicked, run the same loadWeather function again.
+    // We pass loadWeather without () so the button calls it later, on each click.
+    document.getElementById("refreshButton").addEventListener("click", loadWeather);
+
+    // Run loadWeather when the page loads
+    loadWeather();
+  </script>
+</body>
+</html>

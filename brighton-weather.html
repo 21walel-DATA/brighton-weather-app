@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My Weather App - Stage 1</title>
+</head>
+<body>
+  <h1>Brighton Weather - Stage 1</h1>
+
+  <p>Showing weather for: <strong id="townName"></strong></p>
+  <p>Open-Meteo URL: <a id="weatherLink" target="_blank"></a></p>
+  <p>Click the link above to open the raw weather data in a new tab.</p>
+
+  <script>
+    // CONFIG holds all the settings for the app in one place.
+    // Open-Meteo needs no API key, so we do not need one here.
+    // If an API did need a key, this is where it would go,
+    // for example: apiKey: "your-key-here"
+    const CONFIG = {
+      town: "Brighton",
+      latitude: 50.8284,
+      longitude: -0.1395
+    };
+
+    // buildUrl joins strings together with + to make the Open-Meteo forecast URL.
+    // It asks for the current temperature, weather code and wind speed,
+    // using the Europe/London timezone (the / is written as %2F in a URL).
+    function buildUrl() {
+      const url = "https://api.open-meteo.com/v1/forecast" +
+        "?latitude=" + CONFIG.latitude +
+        "&longitude=" + CONFIG.longitude +
+        "&current=temperature_2m,weather_code,wind_speed_10m" +
+        "&timezone=Europe%2FLondon";
+      return url;
+    }
+
+    // showPage puts the town name and the URL link onto the page.
+    function showPage() {
+      const url = buildUrl();
+
+      document.getElementById("townName").textContent = CONFIG.town;
+
+      const link = document.getElementById("weatherLink");
+      link.href = url;
+      link.textContent = url;
+    }
+
+    // Run showPage when the page loads
+    showPage();
+  </script>
+</body>
+</html>

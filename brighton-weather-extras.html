@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Weather App - Stage 5</title>
+
+  <style>
+    /* The whole page: clear font, card in the middle, background colour changes with the weather */
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #87ceeb;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background-color 0.5s;
+    }
+
+    /* The white weather card */
+    .card {
+      background-color: white;
+      width: 320px;
+      max-width: 90%;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 22px;
+      color: #333;
+    }
+
+    /* The search box and button sit side by side */
+    .search {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .search input {
+      flex: 1;
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      padding: 8px 14px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background-color: #2a6fdb;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #1f56ad;
+    }
+
+    #town {
+      font-size: 26px;
+      font-weight: bold;
+      color: #222;
+    }
+
+    /* The big weather emoji */
+    #icon {
+      font-size: 80px;
+      margin: 8px 0;
+    }
+
+    #temperature {
+      font-size: 40px;
+      font-weight: bold;
+      color: #222;
+    }
+
+    #weatherCode {
+      font-size: 18px;
+      color: #555;
+    }
+
+    #time {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+
+    #message {
+      color: #c0392b;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>My Weather</h1>
+
+    <div class="search">
+      <input id="searchBox" type="text" placeholder="Enter a town, e.g. Leeds">
+      <button id="searchButton">Search</button>
+    </div>
+
+    <div id="town"></div>
+    <div id="icon"></div>
+    <div id="temperature"></div>
+    <div id="weatherCode"></div>
+    <div id="time"></div>
+
+    <button id="refreshButton">Refresh data</button>
+
+    <p id="message"></p>
+  </div>
+
+  <script>
+    // CONFIG holds all the settings for the app in one place.
+    // Open-Meteo needs no API key, so we do not need one here.
+    // If an API did need a key, this is where it would go,
+    // for example: apiKey: "your-key-here"
+    // CONFIG is const, but we can still change the values inside it (the search does this).
+    const CONFIG = {
+      town: "Brighton",
+      latitude: 50.8284,
+      longitude: -0.1395
+    };
+
+    // buildUrl joins strings together with + to make the Open-Meteo forecast URL.
+    // It asks for the current temperature, weather code and wind speed,
+    // using the Europe/London timezone (the / is written as %2F in a URL).
+    function buildUrl() {
+      const url = "https://api.open-meteo.com/v1/forecast" +
+        "?latitude=" + CONFIG.latitude +
+        "&longitude=" + CONFIG.longitude +
+        "&current=temperature_2m,weather_code,wind_speed_10m" +
+        "&timezone=Europe%2FLondon";
+      return url;
+    }
+
+    // formatDate turns "2026-10-28T12:45" into "28/10/2026 12:45".
+    // split cuts a string into an array of pieces wherever it finds the given character.
+    function formatDate(isoTime) {
+      // "2026-10-28T12:45" -> ["2026-10-28", "12:45"]
+      const dateAndTime = isoTime.split("T");
+      const date = dateAndTime[0];
+      const time = dateAndTime[1];
+
+      // "2026-10-28" -> ["2026", "10", "28"]
+      const parts = date.split("-");
+      const year = parts[0];
+      const month = parts[1];
+      const day = parts[2];
+
+      return day + "/" + month + "/" + year + " " + time;
+    }
+
+    // describeWeather turns the weather code number into words.
+    function describeWeather(code) {
+      if (code === 0) {
+        return "Clear sky";
+      } else if (code >= 1 && code <= 3) {
+        return "Cloudy";
+      } else if (code >= 45 && code <= 48) {
+        return "Fog";
+      } else if (code >= 51 && code <= 67) {
+        return "Rain";
+      } else if (code >= 71 && code <= 77) {
+        return "Snow";
+      } else if (code >= 80 && code <= 82) {
+        return "Rain showers";
+      } else if (code >= 95) {
+        return "Thunderstorm";
+      } else {
+        return "Unknown";
+      }
+    }
+
+    // weatherIcon turns the weather code into a big emoji, using the same groups as describeWeather.
+    function weatherIcon(code) {
+      if (code === 0) {
+        return "☀️";
+      } else if (code >= 1 && code <= 3) {
+        return "☁️";
+      } else if (code >= 45 && code <= 48) {
+        return "🌫️";
+      } else if (code >= 51 && code <= 67) {
+        return "🌧️";
+      } else if (code >= 71 && code <= 77) {
+        return "❄️";
+      } else if (code >= 80 && code <= 82) {
+        return "🌦️";
+      } else if (code >= 95) {
+        return "⛈️";
+      } else {
+        return "❓";
+      }
+    }
+
+    // weatherColour picks a page background colour to match the weather code.
+    function weatherColour(code) {
+      if (code === 0) {
+        return "#87ceeb";   // sunny sky blue
+      } else if (code >= 1 && code <= 3) {
+        return "#b0bec5";   // cloudy grey
+      } else if (code >= 45 && code <= 48) {
+        return "#cfd8dc";   // pale fog grey
+      } else if (code >= 51 && code <= 67) {
+        return "#5c7a99";   // rainy blue-grey
+      } else if (code >= 71 && code <= 77) {
+        return "#e3f2fd";   // snowy white-blue
+      } else if (code >= 80 && code <= 82) {
+        return "#6a8caf";   // showers blue
+      } else if (code >= 95) {
+        return "#455a64";   // stormy dark grey
+      } else {
+        return "#dddddd";   // unknown: plain grey
+      }
+    }
+
+    // showWeather takes the data from the API and puts each value on the card,
+    // then changes the page background to match the weather.
+    function showWeather(data) {
+      const code = data.current.weather_code;
+
+      document.getElementById("town").textContent = CONFIG.town;
+      document.getElementById("icon").textContent = weatherIcon(code);
+      document.getElementById("temperature").textContent = data.current.temperature_2m + "°C";
+      document.getElementById("weatherCode").textContent = describeWeather(code);
+      document.getElementById("time").textContent = formatDate(data.current.time);
+
+      document.body.style.backgroundColor = weatherColour(code);
+    }
+
+    // loadWeather asks the API for the weather and passes the data to showWeather.
+    // try runs the code; if anything goes wrong, catch shows an error message instead.
+    async function loadWeather() {
+      try {
+        // Step 1: send the request and wait for the response
+        const response = await fetch(buildUrl());
+
+        // Step 2: turn the response into a JavaScript object
+        const data = await response.json();
+
+        // Step 3: hand the data to showWeather and clear any old error message
+        showWeather(data);
+        document.getElementById("message").textContent = "";
+      } catch (error) {
+        document.getElementById("message").textContent = "Could not load the weather.";
+        console.log(error);
+      }
+    }
+
+    // searchTown looks up the typed town with the Open-Meteo geocoding API,
+    // copies its name, latitude and longitude into CONFIG, then calls loadWeather.
+    async function searchTown() {
+      const name = document.getElementById("searchBox").value.trim();
+
+      // Stop if the box is empty
+      if (name === "") {
+        document.getElementById("message").textContent = "Please type a town name.";
+        return;
+      }
+
+      try {
+        // encodeURIComponent makes the name safe to put in a URL (e.g. spaces in "New York")
+        const url = "https://geocoding-api.open-meteo.com/v1/search?count=1&name=" +
+          encodeURIComponent(name);
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // If nothing was found, the API sends no "results" list
+        if (!data.results) {
+          document.getElementById("message").textContent = "Town not found. Try another name.";
+          return;
+        }
+
+        // Take the first (and only) result and update CONFIG
+        const place = data.results[0];
+        CONFIG.town = place.name;
+        CONFIG.latitude = place.latitude;
+        CONFIG.longitude = place.longitude;
+
+        // Load the weather for the new town
+        loadWeather();
+      } catch (error) {
+        document.getElementById("message").textContent = "Could not search for that town.";
+        console.log(error);
+      }
+    }
+
+    // When the Refresh button is clicked, run the same loadWeather function again.
+    // We pass loadWeather without () so the button calls it later, on each click.
+    document.getElementById("refreshButton").addEventListener("click", loadWeather);
+
+    // When the Search button is clicked, run searchTown
+    document.getElementById("searchButton").addEventListener("click", searchTown);
+
+    // Run loadWeather when the page loads
+    loadWeather();
+  </script>
+</body>
+</html>
