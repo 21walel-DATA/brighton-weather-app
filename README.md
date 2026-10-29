@@ -12,6 +12,11 @@ I built it in five stages as part of week 7 of the TechNative 10-week Software D
 | 4 | [brighton-weather-refresh.html](brighton-weather-refresh.html) | A Refresh button. `formatDate` uses `split` to show the date as 28/10/2026 12:45. `describeWeather` turns the weather code into words, and the temperature gets °C. |
 | 5 | [brighton-weather-extras.html](brighton-weather-extras.html) | A styled weather card, a big weather emoji, a background colour that matches the weather, and a search box that looks up any town with the Open-Meteo geocoding API. |
 
+## Try it live
+
+- **Finished app (stage 5):** https://21walel-data.github.io/brighton-weather-app/brighton-weather-extras.html
+- All stages: https://21walel-data.github.io/brighton-weather-app/
+
 ## How to run it
 
 Download or clone the repo, then double-click any `.html` file to open it in your browser. It needs an internet connection to fetch the weather.
